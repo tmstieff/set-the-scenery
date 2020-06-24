@@ -1,0 +1,91 @@
+import Oui from "./OliUI";
+import LocationPrompt from "./LocationPrompt";
+
+class LocationPromptWidget {
+    private isSet: boolean;
+    private onSet: Function;
+    private currentLocationX: number;
+    private currentLocationY: number;
+
+    public element: any;
+
+    constructor(text: string, locationPrompt: LocationPrompt, x: number, y: number, onSet = null) {
+
+        this.isSet = x > -1 && y > -1;
+        this.onSet = onSet;
+
+        this.currentLocationX = x;
+        this.currentLocationY = y;
+
+        this.element = this._createElements(text, locationPrompt);
+    }
+
+    _createElements(text: string, locationPrompt): any {
+        let that = this;
+        let horizontalBox = new Oui.HorizontalBox();
+        horizontalBox.setPadding(0, 0, 0, 0);
+
+        let locateButton = null;
+
+        let promptLocationButton = new Oui.Widgets.ImageButton(5504, () => {
+            if (!promptLocationButton.isPressed()) {
+                statusLabel.setText("Select a tile...");
+                locationPrompt.prompt((x, y) => {
+                    that.currentLocationX = x;
+                    that.currentLocationY = y;
+                    locateButton.setIsDisabled(false);
+                    promptLocationButton.setIsPressed(false);
+                    statusLabel.setText("Location set (x: " + x + ", y: " + y + ")");
+                    that.isSet = true;
+                    if (that.onSet)
+                        that.onSet(x, y);
+                }, () => {
+                    promptLocationButton.setIsPressed(false);
+                });
+                promptLocationButton.setIsPressed(true);
+            }
+            else {
+                if (that.isSet) {
+                    statusLabel.setText("Location set (x: " + that.currentLocationX + ", y: " + that.currentLocationY + ")");
+                }
+                else {
+                    statusLabel.setText("No location");
+                }
+                locationPrompt.cancel();
+                promptLocationButton.setIsPressed(false);
+            }
+        });
+        promptLocationButton.setWidth(44);
+        promptLocationButton.setHeight(32);
+        promptLocationButton.setBorder(true);
+        horizontalBox.addChild(promptLocationButton);
+
+        let infoBox = new Oui.VerticalBox();
+        infoBox._paddingTop = infoBox._paddingTop + 1;
+        horizontalBox.addChild(infoBox);
+        horizontalBox.setRemainingWidthFiller(infoBox);
+
+        let infoLabel = new Oui.Widgets.Label(text);
+        infoBox.addChild(infoLabel);
+
+        let statusLabel = new Oui.Widgets.Label("No location");
+        infoBox.addChild(statusLabel);
+
+        locateButton = new Oui.Widgets.ImageButton(5167, () => {
+            ui.mainViewport.scrollTo({ x: that.currentLocationX * 32, y: that.currentLocationY * 32 });
+        });
+        locateButton.setWidth(24);
+        locateButton.setHeight(24);
+        locateButton.setIsDisabled(true);
+        horizontalBox.addChild(locateButton);
+
+        if (this.isSet) {
+            statusLabel.setText("Location set (x: " + this.currentLocationX + ", y: " + this.currentLocationY + ")");
+            locateButton.setIsDisabled(false);
+        }
+
+        return horizontalBox;
+    }
+}
+
+export default LocationPromptWidget;

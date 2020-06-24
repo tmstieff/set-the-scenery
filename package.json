@@ -1,0 +1,41 @@
+{
+  "name": "set-the-scenery",
+  "version": "1.0.0",
+  "description": "Scenery creation and adjustment utilities",
+  "main": "init.js",
+  "scripts": {
+    "start": "nodemon --watch ./src --ext js,ts",
+    "build:develop": "tsc --project tsconfig-develop.json",
+    "build": "tsc --project tsconfig-prod.json",
+    "rollup": "rollup -c && babel ./build/SetTheScenery.js --out-file ./build/SetTheScenery.js && cpy ./build/SetTheScenery.js /home/taylor/.config/OpenRCT2/plugin/ --rename=SetTheScenery.js",
+    "lint": "eslint ./src/*.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wisnia74/openrct2-typescript-mod-template.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wisnia74/openrct2-typescript-mod-template/issues"
+  },
+  "homepage": "https://github.com/wisnia74/openrct2-typescript-mod-template#readme",
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.9.5",
+    "@rollup/plugin-typescript": "^5.0.0",
+    "@typescript-eslint/eslint-plugin": "^3.0.0",
+    "@typescript-eslint/parser": "^3.0.0",
+    "babel-cli": "^6.26.0",
+    "babel-loader": "^8.1.0",
+    "babel-preset-env": "^1.7.0",
+    "cpy-cli": "^3.1.1",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2",
+    "nodemon": "^2.0.4",
+    "npm-watch": "^0.6.0",
+    "rollup": "^2.18.0",
+    "typescript": "^3.9.3"
+  }
+}
