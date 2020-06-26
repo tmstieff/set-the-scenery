@@ -1,4 +1,4 @@
-/// <reference path="/home/taylor/.config/OpenRCT2/bin/openrct2.d.ts" />
+/// <reference path="/home/taylor/Programs/OpenRCT2/distribution/openrct2.d.ts" />
 
 import MainWindow from "./MainWindow";
 

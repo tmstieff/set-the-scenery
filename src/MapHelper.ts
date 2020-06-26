@@ -42,13 +42,14 @@ class MapHelper {
         return element;
     }
 
-    static placeWall(tile: Tile, objectIndex: number, baseHeight: number, height: number) {
+    static placeWall(tile: Tile, objectIndex: number, baseHeight: number, height: number, direction: 0 | 1 | 2 | 3 = 0) {
         // @ts-ignore
         const element: WallElement = MapHelper.insertTileElement(tile, height);
         element.type = "wall";
         element.object = objectIndex;
         element.baseHeight = baseHeight;
         element.clearanceHeight = baseHeight + height;
+        element.direction = direction;
         return element;
     }
 

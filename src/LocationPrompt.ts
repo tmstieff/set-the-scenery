@@ -51,7 +51,6 @@ class LocationPrompt {
                 }
                 this.downCoords = e.mapCoords;
                 this.selectedCoords = e.mapCoords;
-                // this.setSelectionRange(this.downCoords, this.selectedCoords);
             },
             onMove: (e) => {
                 if (e.mapCoords.x === 0 && e.mapCoords.y === 0) {

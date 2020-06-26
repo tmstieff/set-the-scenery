@@ -2374,8 +2374,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                             listViewColumns.push(listViewColumn);
                         }
                     }
-                    for (var _i = 0; _i < listViewColumns.length; _i++) {
-                        listViewColumns[_i]._listView = this;
+                    for (var _i2 = 0; _i2 < listViewColumns.length; _i2++) {
+                        listViewColumns[_i2]._listView = this;
                     }
                     this._columns = listViewColumns;
                 }
@@ -2522,9 +2522,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                     handle.columns[i] = desc.columns[i];
                 }
 
-                for (var _i2 = 0; _i2 < handle.items.length && _i2 < desc.items.length; _i2++) {
-                    for (var j = 0; j < handle.items[_i2].length && j < desc.items[_i2].length; j++) {
-                        handle.items[_i2][j] = desc.items[_i2][j];
+                for (var _i3 = 0; _i3 < handle.items.length && _i3 < desc.items.length; _i3++) {
+                    for (var j = 0; j < handle.items[_i3].length && j < desc.items[_i3].length; j++) {
+                        handle.items[_i3][j] = desc.items[_i3][j];
                     }
                 }
             }
@@ -2752,7 +2752,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                     }
                     _this.downCoords = e.mapCoords;
                     _this.selectedCoords = e.mapCoords;
-                    // this.setSelectionRange(this.downCoords, this.selectedCoords);
                 },
                 onMove: function onMove(e) {
                     if (e.mapCoords.x === 0 && e.mapCoords.y === 0) {
@@ -2837,13 +2836,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             element.clearanceHeight = height + 1;
             return element;
         };
-        MapHelper.placeWall = function (tile, objectIndex, baseHeight, height) {
+        MapHelper.placeWall = function (tile, objectIndex, baseHeight, height, direction) {
+            if (direction === void 0) {
+                direction = 0;
+            }
             // @ts-ignore
             var element = MapHelper.insertTileElement(tile, height);
             element.type = "wall";
             element.object = objectIndex;
             element.baseHeight = baseHeight;
             element.clearanceHeight = baseHeight + height;
+            element.direction = direction;
             return element;
         };
         MapHelper.getElementIndex = function (tile, element) {
@@ -2878,11 +2881,114 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         return MapHelper;
     }();
 
+    var Pollyfill = /** @class */function () {
+        function Pollyfill() {}
+        Pollyfill.anyExists = function (array, predicate) {
+            for (var _i = 0, array_1 = array; _i < array_1.length; _i++) {
+                var value = array_1[_i];
+                if (predicate(value)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        return Pollyfill;
+    }();
+
+    var ObjectUtil = /** @class */function () {
+        function ObjectUtil() {}
+        ObjectUtil.getElementAtZ = function (x, y, surfaceDelta, type) {
+            var tile = map.getTile(x, y);
+            var elements = [];
+            for (var i = 0; i < tile.numElements; i++) {
+                // @ts-ignore
+                var element = tile.getElement(i);
+                // Check if the type matches at the current desired level
+                if (element.type === type) {
+                    var groundLevel = MapHelper.getTileSurfaceZ(x, y);
+                    if (element.baseHeight === groundLevel + surfaceDelta) {
+                        // @ts-ignore
+                        elements.push(element);
+                    }
+                }
+            }
+            return elements;
+        };
+        ObjectUtil.getWallAtSurfaceDelta = function (x, y, surfaceDelta) {
+            var walls = ObjectUtil.getElementAtZ(x, y, surfaceDelta, 'wall');
+            if (walls.length > 0) {
+                return walls[0];
+            }
+            return null;
+        };
+        ObjectUtil.getWallsAtSurfaceDelta = function (x, y, surfaceDelta) {
+            return ObjectUtil.getElementAtZ(x, y, surfaceDelta, 'wall');
+        };
+        ObjectUtil.placeWallRectangle = function (start, end, objectId, surfaceDelta, objectHeight) {
+            var left = Math.floor(Math.min(start.x, end.x));
+            var right = Math.floor(Math.max(start.x, end.x));
+            var top = Math.floor(Math.min(start.y, end.y));
+            var bottom = Math.floor(Math.max(start.y, end.y));
+            for (var x = left; x <= right; x++) {
+                for (var y = top; y <= bottom; y++) {
+                    var currentTile = map.getTile(x, y);
+                    var surfaceHeight = MapHelper.getTileSurfaceZ(x, y);
+                    var existingWalls = ObjectUtil.getWallsAtSurfaceDelta(x, y, surfaceDelta);
+                    existingWalls.forEach(function (wall) {
+                        console.log({ type: wall.type, direction: wall.direction });
+                    });
+                    // Check if on an edge
+                    if (x == left) {
+                        // Check for a collision
+                        var existingWalls_1 = ObjectUtil.getWallsAtSurfaceDelta(x, y, surfaceDelta);
+                        if (!Pollyfill.anyExists(existingWalls_1, function (wall) {
+                            return wall.direction === 0;
+                        })) {
+                            var newLeftWall = MapHelper.placeWall(currentTile, objectId, surfaceHeight + surfaceDelta, objectHeight, 0);
+                        }
+                        currentTile = map.getTile(x, y);
+                    }
+                    if (x == right) {
+                        // Check for a collision
+                        var existingWalls_2 = ObjectUtil.getWallsAtSurfaceDelta(x, y, surfaceDelta);
+                        if (!Pollyfill.anyExists(existingWalls_2, function (wall) {
+                            return wall.direction === 2;
+                        })) {
+                            var newRightWall = MapHelper.placeWall(currentTile, objectId, surfaceHeight + surfaceDelta, objectHeight, 2);
+                        }
+                        currentTile = map.getTile(x, y);
+                    }
+                    if (y == top) {
+                        // Check for a collision
+                        var existingWalls_3 = ObjectUtil.getWallsAtSurfaceDelta(x, y, surfaceDelta);
+                        if (!Pollyfill.anyExists(existingWalls_3, function (wall) {
+                            return wall.direction === 3;
+                        })) {
+                            var newTopWall = MapHelper.placeWall(currentTile, objectId, surfaceHeight + surfaceDelta, objectHeight, 3);
+                        }
+                        currentTile = map.getTile(x, y);
+                    }
+                    if (y == bottom) {
+                        // Check for a collision
+                        var existingWalls_4 = ObjectUtil.getWallsAtSurfaceDelta(x, y, surfaceDelta);
+                        if (!Pollyfill.anyExists(existingWalls_4, function (wall) {
+                            return wall.direction === 1;
+                        })) {
+                            var newBottomWall = MapHelper.placeWall(currentTile, objectId, surfaceHeight + surfaceDelta, objectHeight, 1);
+                        }
+                        currentTile = map.getTile(x, y);
+                    }
+                }
+            }
+        };
+        return ObjectUtil;
+    }();
+
     var MainWindow = /** @class */function () {
         function MainWindow() {
             this.currentLocationX = -1;
             this.currentLocationY = -1;
-            this.zLevelAdjustment = 0;
+            this.surfaceDeltaZ = 0;
             this.locationPrompt = new LocationPrompt("set-the-scenery-loc-prompt");
             this.window = this.createWindow();
         }
@@ -2891,69 +2997,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         };
         MainWindow.prototype.onSet = function (start, end) {
             if (start.x > -1 && start.y > -1) {
-                var tile = map.getTile(start.x, start.y);
-                if (tile) {
-                    var element = void 0;
-                    for (var i = 0; i < tile.numElements; i++) {
-                        // @ts-ignore
-                        element = tile.getElement(i);
-                        // Check if a wall at the current desired level
-                        if (element.type === 'wall') {
-                            var groundLevel = MapHelper.getTileSurfaceZ(start.x, start.y);
-                            if (element.baseHeight === groundLevel + this.zLevelAdjustment) {
-                                break;
-                            }
-                        }
-                        element = null;
+                var element = ObjectUtil.getWallAtSurfaceDelta(start.x, start.y, this.surfaceDeltaZ);
+                if (element || this.lastElement) {
+                    var objectHeight = 4;
+                    if (element) {
+                        this.lastElement = element;
+                        objectHeight = element.clearanceHeight - element.baseHeight;
+                    } else if (this.lastElement) {
+                        objectHeight = this.lastElement.clearanceHeight - this.lastElement.baseHeight;
                     }
-                    if (element || this.lastElement) {
-                        if (element) {
-                            this.lastElement = element;
-                        }
-                        var objectId = element ? element.object : this.lastElement.object;
-                        var left = Math.floor(Math.min(start.x, end.x));
-                        var right = Math.floor(Math.max(start.x, end.x));
-                        var top_1 = Math.floor(Math.min(start.y, end.y));
-                        var bottom = Math.floor(Math.max(start.y, end.y));
-                        var viewRotation = ui.mainViewport.rotation;
-                        while (viewRotation > 1) {
-                            viewRotation -= 2;
-                        }
-                        var zLevel = this.zLevelAdjustment;
-                        var objectHeight = 4;
-                        if (element) {
-                            objectHeight = element.clearanceHeight - element.baseHeight;
-                        } else if (this.lastElement) {
-                            objectHeight = this.lastElement.clearanceHeight - this.lastElement.baseHeight;
-                        }
-                        for (var x = left; x <= right; x++) {
-                            for (var y = top_1; y <= bottom; y++) {
-                                var currentTile = map.getTile(x, y);
-                                var surfaceHeight = MapHelper.getTileSurfaceZ(x, y);
-                                // Check if on an edge
-                                if (x == left) {
-                                    var newLeftTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                    // @ts-ignore
-                                    MapHelper.setTileElementRotation(currentTile, newLeftTile._index, 0);
-                                }
-                                if (x == right) {
-                                    var newRightTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                    // @ts-ignore
-                                    MapHelper.setTileElementRotation(currentTile, newRightTile._index, 2);
-                                }
-                                if (y == top_1) {
-                                    var newTopTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                    // @ts-ignore
-                                    MapHelper.setTileElementRotation(currentTile, newTopTile._index, 3);
-                                }
-                                if (y == bottom) {
-                                    var newBottomTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                    // @ts-ignore
-                                    MapHelper.setTileElementRotation(currentTile, newBottomTile._index, 1);
-                                }
-                            }
-                        }
-                    }
+                    var zLevel = this.surfaceDeltaZ;
+                    var objectId = element ? element.object : this.lastElement.object;
+                    ObjectUtil.placeWallRectangle(start, end, objectId, zLevel, objectHeight);
                 }
             }
         };
@@ -2972,7 +3027,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             var horizontalBox = new Oui.HorizontalBox();
             horizontalBox.setPadding(0, 0, 0, 0);
             var locateButton = null;
-            this.zLevelAdjustment = 0;
+            this.surfaceDeltaZ = 0;
             var promptLocationButton = new Oui.Widgets.ImageButton(5504, function () {
                 if (!promptLocationButton.isPressed()) {
                     statusLabel.setText("Select a tile...");
@@ -3025,7 +3080,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             var heightGroupBox = new Oui.GroupBox("Height Adjustment");
             window.addChild(heightGroupBox);
             var heightInput = new Oui.Widgets.Spinner(0, 1, function (value) {
-                return _this.zLevelAdjustment = value;
+                return _this.surfaceDeltaZ = value;
             });
             heightGroupBox.addChild(heightInput);
             var bottom = new Oui.HorizontalBox();
@@ -3039,7 +3094,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         return MainWindow;
     }();
 
-    /// <reference path="/home/taylor/.config/OpenRCT2/bin/openrct2.d.ts" />
+    /// <reference path="/home/taylor/Programs/OpenRCT2/distribution/openrct2.d.ts" />
     var main = function main() {
         console.log('SetTheScenery loading');
         function closeWindow(classification) {

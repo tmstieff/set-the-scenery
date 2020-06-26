@@ -7,7 +7,7 @@
     "start": "nodemon --watch ./src --ext js,ts",
     "build:develop": "tsc --project tsconfig-develop.json",
     "build": "tsc --project tsconfig-prod.json",
-    "rollup": "rollup -c && babel ./build/SetTheScenery.js --out-file ./build/SetTheScenery.js && cpy ./build/SetTheScenery.js /home/taylor/.config/OpenRCT2/plugin/ --rename=SetTheScenery.js",
+    "rollup": "rollup -c && babel ./build/SetTheScenery.js --out-file ./build/SetTheScenery.js && cpy ./build/SetTheScenery.js /home/taylor/.config/OpenRCT2/plugin/SetTheScenery/ --rename=SetTheScenery.js",
     "lint": "eslint ./src/*.ts"
   },
   "repository": {

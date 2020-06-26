@@ -1,11 +1,12 @@
 import Oui from "./OliUI";
 import LocationPrompt from "./LocationPrompt";
 import MapHelper from "./MapHelper";
+import TileUtils from "./TileUtils";
 
 class MainWindow {
     private currentLocationX: number;
     private currentLocationY: number;
-    private zLevelAdjustment: number;
+    private surfaceDeltaZ: number;
     private lastElement: WallElement | SmallSceneryElement;
 
     private isSet: boolean;
@@ -18,7 +19,7 @@ class MainWindow {
         this.currentLocationX = -1;
         this.currentLocationY = -1;
 
-        this.zLevelAdjustment = 0;
+        this.surfaceDeltaZ = 0;
 
         this.locationPrompt = new LocationPrompt("set-the-scenery-loc-prompt");
         this.window = this.createWindow();
@@ -30,79 +31,21 @@ class MainWindow {
 
     onSet(start: { x: number, y: number }, end: { x: number, y: number }) {
         if (start.x > -1 && start.y > -1) {
-            const tile = map.getTile(start.x, start.y);
-            if (tile) {
-                let element: WallElement;
-                for (let i = 0; i < tile.numElements; i++) {
-                    // @ts-ignore
-                    element = tile.getElement(i);
-                    // Check if a wall at the current desired level
-                    if (element.type === 'wall') {
-                        const groundLevel = MapHelper.getTileSurfaceZ(start.x, start.y);
-                        if (element.baseHeight === (groundLevel + this.zLevelAdjustment)) {
-                            break;
-                        }
-                    }
+            const element: WallElement | null = TileUtils.getWallAtSurfaceDelta(start.x, start.y, this.surfaceDeltaZ);
+            if (element || this.lastElement) {
+                let objectHeight = 4;
+                if (element) {
+                    this.lastElement = element;
 
-                    element = null;
+                    objectHeight = element.clearanceHeight - element.baseHeight;
+                } else if (this.lastElement) {
+                    objectHeight = this.lastElement.clearanceHeight - this.lastElement.baseHeight;
                 }
 
-                if (element || this.lastElement) {
-                    if (element) {
-                        this.lastElement = element;
-                    }
+                const zLevel = this.surfaceDeltaZ;
+                const objectId = element ? element.object : this.lastElement.object;
 
-                    const objectId = element ? element.object : this.lastElement.object;
-
-                    let left = Math.floor(Math.min(start.x, end.x));
-                    let right = Math.floor(Math.max(start.x, end.x));
-                    let top = Math.floor(Math.min(start.y, end.y));
-                    let bottom = Math.floor(Math.max(start.y, end.y));
-
-                    let viewRotation = ui.mainViewport.rotation;
-                    while (viewRotation > 1) {
-                        viewRotation -= 2;
-                    }
-
-                    const zLevel = this.zLevelAdjustment;
-                    let objectHeight = 4;
-                    if (element) {
-                        objectHeight = element.clearanceHeight - element.baseHeight;
-                    } else if (this.lastElement) {
-                        objectHeight = this.lastElement.clearanceHeight - this.lastElement.baseHeight;
-                    }
-
-                    for (let x = left; x <= right; x++) {
-                        for (let y = top; y <= bottom; y++) {
-                            let currentTile = map.getTile(x, y);
-                            let surfaceHeight = MapHelper.getTileSurfaceZ(x, y);
-                            // Check if on an edge
-                            if (x == left) {
-                                const newLeftTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                // @ts-ignore
-                                MapHelper.setTileElementRotation(currentTile, newLeftTile._index, 0);
-                            }
-
-                            if (x == right) {
-                                const newRightTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                // @ts-ignore
-                                MapHelper.setTileElementRotation(currentTile, newRightTile._index, 2);
-                            }
-
-                            if (y == top) {
-                                const newTopTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                // @ts-ignore
-                                MapHelper.setTileElementRotation(currentTile, newTopTile._index, 3);
-                            }
-
-                            if (y == bottom) {
-                                const newBottomTile = MapHelper.placeWall(currentTile, objectId, surfaceHeight + zLevel, objectHeight);
-                                // @ts-ignore
-                                MapHelper.setTileElementRotation(currentTile, newBottomTile._index, 1);
-                            }
-                        }
-                    }
-                }
+                TileUtils.placeWallRectangle(start, end, objectId, zLevel, objectHeight);
             }
         }
     }
@@ -125,7 +68,7 @@ class MainWindow {
         horizontalBox.setPadding(0, 0, 0, 0);
 
         let locateButton = null;
-        this.zLevelAdjustment = 0;
+        this.surfaceDeltaZ = 0;
 
         let promptLocationButton = new Oui.Widgets.ImageButton(5504, () => {
             if (!promptLocationButton.isPressed()) {
@@ -189,7 +132,7 @@ class MainWindow {
         let heightGroupBox = new Oui.GroupBox("Height Adjustment");
         window.addChild(heightGroupBox);
 
-        let heightInput = new Oui.Widgets.Spinner(0, 1, (value: number) => this.zLevelAdjustment = value);
+        let heightInput = new Oui.Widgets.Spinner(0, 1, (value: number) => this.surfaceDeltaZ = value);
         heightGroupBox.addChild(heightInput);
 
         let bottom = new Oui.HorizontalBox();
